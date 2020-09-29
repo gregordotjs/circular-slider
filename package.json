@@ -1,0 +1,26 @@
+{
+  "name": "circular-slider",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack",
+    "start": "webpack-dev-server --open"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gregordotjs/circular-slider.git"
+  },
+  "author": "Gregor",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gregordotjs/circular-slider/issues"
+  },
+  "homepage": "https://github.com/gregordotjs/circular-slider#readme",
+  "devDependencies": {
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.11.0"
+  }
+}
