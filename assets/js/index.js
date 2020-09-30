@@ -4,7 +4,7 @@ new CircularSlider({
   max: 4,
   min: 0,
   step: 1,
-  radius: 120,
+  radius: 140,
   onChange: (data) => {
     document.getElementById("spinner1Results").textContent = data;
   },

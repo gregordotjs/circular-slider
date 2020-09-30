@@ -4,6 +4,7 @@
 export const MOUSE_DOWN = "mousedown";
 export const MOUSE_UP = "mouseup";
 export const MOUSE_MOVE = "mousemove";
+export const CLICK = "click";
 
 // svg types
 export const SVG = "svg";

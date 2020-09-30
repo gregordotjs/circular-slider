@@ -1,11 +1,18 @@
 //@ts-check
-import { CIRCLE, MOUSE_DOWN, MOUSE_MOVE, MOUSE_UP, SVG } from "./utils/consts";
+import {
+  CIRCLE,
+  CLICK,
+  MOUSE_DOWN,
+  MOUSE_MOVE,
+  MOUSE_UP,
+  SVG,
+} from "./utils/consts";
 import generateSVGElement from "./utils/generate-svg";
 
 const defaults = {
   svgHeight: 400,
   svgWidth: 400,
-  strokeWidth: 30,
+  strokeWidth: 40,
   center: {
     x: 0,
     y: 0,
@@ -25,6 +32,7 @@ export class CircularSlider {
   #min = 0;
   #step = 0;
   #radius = 0;
+  #circumference = 0;
 
   #isMouseDown = false;
 
@@ -98,32 +106,35 @@ export class CircularSlider {
       this.#container.appendChild(this.#SVGContainer);
     }
 
-    const {
-      left,
-      top,
-      width,
-      height,
-    } = this.#SVGContainer.getBoundingClientRect();
+    const { width, height } = this.#SVGContainer.getBoundingClientRect();
 
     // calculate the center of the SVG container
     defaults.center = {
-      x: left + width / 2,
-      y: top + height / 2,
+      x: width / 2,
+      y: height / 2,
     };
-
+    const { x, y } = defaults.center;
     const circleAttributes = {
-      cx: defaults.center.x,
-      cy: defaults.center.y,
+      cx: x,
+      cy: y,
       r: this.#radius,
       fill: "none",
       stroke: "#dadada",
       ["stroke-width"]: defaults.strokeWidth,
+      style: "cursor: pointer;",
     };
 
     this.#circle = generateSVGElement(circleAttributes, CIRCLE);
+
+    // stroke-dasharray: dash-length, gap-length
+    // "hides" the progress circle
+    this.#circumference = Math.round(2 * Math.PI * this.#radius);
     this.#progressCircle = generateSVGElement(
       {
         ...circleAttributes,
+        ["stroke-dasharray"]: this.#circumference,
+        ["stroke-dashoffset"]: this.#circumference,
+        style: `transform: rotate(-90deg); transform-origin: ${x}px ${y}px`,
         stroke: this.#color,
       },
       CIRCLE
@@ -131,8 +142,8 @@ export class CircularSlider {
 
     this.#sliderHandle = generateSVGElement(
       {
-        cx: defaults.center.x,
-        cy: defaults.center.y - this.#radius,
+        cx: x,
+        cy: y - this.#radius,
         r: 7,
         fill: "none",
         stroke: "black",
@@ -149,23 +160,32 @@ export class CircularSlider {
 
     // Setting up events for SVG elements
     this.#circle.addEventListener(MOUSE_UP, this.#onMouseDown);
+    this.#circle.addEventListener(CLICK, this.#onMouseClick);
+    this.#progressCircle.addEventListener(CLICK, this.#onMouseClick);
 
     this.#sliderHandle.addEventListener(MOUSE_DOWN, this.#onMouseDown);
     this.#sliderHandle.addEventListener(MOUSE_UP, this.#onMouseDown);
     this.#sliderHandle.addEventListener(MOUSE_MOVE, this.#onMouseMove);
   };
 
+  /**
+   * @param {MouseEvent} e
+   */
+  #onMouseClick = (e) => {
+    this.#isMouseDown = true;
+    this.#onMouseMove(e);
+    this.#isMouseDown = false;
+  };
+
   #onMouseDown = ({ type }) => {
     switch (type) {
       case MOUSE_DOWN:
-        // @ts-ignore
-        this.#sliderHandle.style = "cursor: grabbing;";
+        this.#sliderHandle.setAttribute("style", "cursor: grabbing");
         this.#isMouseDown = true;
         break;
 
       default:
-        // @ts-ignore
-        this.#sliderHandle.style = "cursor: grab;";
+        this.#sliderHandle.setAttribute("style", "cursor: grab");
         this.#isMouseDown = false;
         break;
     }
@@ -180,26 +200,31 @@ export class CircularSlider {
     const { pageX, pageY } = e;
 
     // Calculating new position with e.x and e.y (SVG coordinates) doesn't yield the correct behavior (slider handle is always a bit off).
-
     // Obtaining screen coordinates from SVG coordinates
     // @ts-ignore
     let pt = this.#SVGContainer.createSVGPoint();
-
     // Set point coordinates (pageX, pageY; relative to the <HTML> element)
     pt.x = pageX;
     pt.y = pageY;
-
     // @ts-ignore
     pt = pt.matrixTransform(this.#SVGContainer.getScreenCTM().inverse());
 
     const { x, y, radians } = this.#calculateCoordinates(pt.x, pt.y);
+    let degrees = radians * (180 / Math.PI);
+
+    // convert to North 0 - 360 degrees
+    if (degrees < -90) {
+      degrees += 450;
+    } else {
+      degrees += 90;
+    }
+
     this.#sliderHandle.setAttribute("cx", x.toString());
     this.#sliderHandle.setAttribute("cy", y.toString());
+    this.#moveProgressCircle(degrees / 360);
 
     this.#handleChange &&
-      this.#handleChange(
-        JSON.stringify({ x, y, r: radians, degrees: radians * (180 / Math.PI) })
-      );
+      this.#handleChange(JSON.stringify({ x, y, r: radians, degrees }));
   };
 
   /**
@@ -219,5 +244,13 @@ export class CircularSlider {
       x: defaults.center.x + this.#radius * Math.cos(radians),
       y: defaults.center.y + this.#radius * Math.sin(radians),
     };
+  };
+
+  /**
+   * @param {number} percentage
+   */
+  #moveProgressCircle = (percentage) => {
+    let offset = this.#circumference - percentage * this.#circumference;
+    this.#progressCircle.setAttribute("stroke-dashoffset", offset.toString());
   };
 }
