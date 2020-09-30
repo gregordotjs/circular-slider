@@ -4,6 +4,10 @@ const defaults = {
   svgHeight: 400,
   svgWidth: 400,
   strokeWidth: 20,
+  center: {
+    x: 0,
+    y: 0,
+  },
 };
 
 const byId = (id) => document.getElementById(id);
@@ -41,6 +45,9 @@ export class CircularSlider {
   /** @type {SVGElement} */
   #circle = null;
 
+  /** @type {SVGElement} */
+  #sliderHandle = null;
+
   constructor(options) {
     const { container, color, max, min, step, radius, onChange } = options;
     if (onChange) {
@@ -71,10 +78,22 @@ export class CircularSlider {
       this.#container.appendChild(this.#SVGContainer);
     }
 
+    // calculate the center of the container
+    const {
+      left,
+      top,
+      width,
+      height,
+    } = this.#SVGContainer.getBoundingClientRect();
+    defaults.center = {
+      x: left + width / 2,
+      y: top + height / 2,
+    };
+
     this.#circle = generateSVGElement(
       {
-        cx: 150,
-        cy: 150,
+        cx: defaults.center.x,
+        cy: defaults.center.y,
         r: this.#radius,
         fill: "none",
         stroke: "#dadada",
@@ -83,10 +102,37 @@ export class CircularSlider {
       },
       CIRCLE
     );
-    this.#SVGContainer.appendChild(this.#circle);
 
-    this.#circle.addEventListener("mousemove", ({ x, y }) => {
-      this.#handleChange(JSON.stringify({ x, y }));
-    });
+    this.#sliderHandle = generateSVGElement(
+      {
+        cx: defaults.center.x,
+        cy: defaults.center.y - this.#radius,
+        r: 7,
+        fill: "none",
+        stroke: "black",
+        ["stroke-width"]: defaults.strokeWidth / 2,
+        style: "cursor: pointer;",
+      },
+      CIRCLE
+    );
+
+    this.#SVGContainer.appendChild(this.#circle);
+    this.#SVGContainer.appendChild(this.#sliderHandle);
+
+    this.#circle.addEventListener("mousemove", this.onMouseMove);
+    this.#sliderHandle.addEventListener("mousemove", this.onMouseMove);
   }
+
+  onMouseMove = ({ x, y }) => {
+    // atan2 returns the angle in radians: https://math.stackexchange.com/questions/94379/calculating-angle-in-circle
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/atan2
+    let radians = Math.atan2(y - defaults.center.y, x - defaults.center.x);
+
+    // If radians are negative, 2 * PI is added https://stackoverflow.com/a/10343477
+    radians = radians < 0 ? (radians += 2 * Math.PI) : radians;
+    
+    this.#handleChange(
+      JSON.stringify({ x, y, r: radians, degrees: radians * (180 / Math.PI) })
+    );
+  };
 }
