@@ -1,4 +1,6 @@
-import { CIRCLE, SVG, generateSVGElement } from "./utils/generate-svg";
+//@ts-check
+import { CIRCLE, MOUSE_DOWN, MOUSE_MOVE, MOUSE_UP, SVG } from "./utils/consts";
+import generateSVGElement from "./utils/generate-svg";
 
 const defaults = {
   svgHeight: 400,
@@ -10,25 +12,23 @@ const defaults = {
   },
 };
 
+/**
+ *
+ * @param {string} id
+ * @returns Element
+ */
 const byId = (id) => document.getElementById(id);
 
 export class CircularSlider {
-  /** @type {string} */
   #color = "";
-
-  /** @type {number} */
   #max = 0;
-
-  /** @type {number} */
   #min = 0;
-
-  /** @type {number} */
   #step = 0;
-
-  /** @type {number} */
   #radius = 0;
 
-  /** @type {(data) => {}} */
+  #isMouseDown = false;
+
+  /** @type {(value: string) => void} */
   #handleChange = null;
 
   /**
@@ -39,18 +39,29 @@ export class CircularSlider {
   /** @type {Element} */
   #container = null;
 
-  /** @type {SVGElement} */
+  /** @type {Element} */
   #SVGContainer = null;
 
-  /** @type {SVGElement} */
+  /** @type {Element} */
   #circle = null;
 
-  /** @type {SVGElement} */
+  /** @type {Element} */
   #sliderHandle = null;
 
+  /**
+   * @param {{ container: string; color: string; max: number; step: number; radius: number; min?: number; onChange?: (value: string) => void; }} options
+   */
   constructor(options) {
-    const { container, color, max, min, step, radius, onChange } = options;
-    if (onChange) {
+    const {
+      container,
+      color,
+      max,
+      min = 0,
+      step,
+      radius,
+      onChange = null,
+    } = options;
+    if (onChange !== null) {
       this.#handleChange = onChange;
     }
     this.#container = byId(container);
@@ -59,32 +70,37 @@ export class CircularSlider {
     this.#min = min;
     this.#step = step;
     this.#radius = radius;
-    this.radius = radius;
-    this.OnInit();
+    this.#OnInit();
   }
 
-  OnInit() {
+  #OnInit = () => {
     this.#SVGContainer = byId("SVGContainer");
+
+    // generate main SVG tag if it doesn't exist yet
     if (this.#SVGContainer === null) {
-      // generate main SVG tag if it doesn't exist yet
+      // this is called only the first time, when SVG container doesn't exits yet
+      const { width, height } = this.#container.getBoundingClientRect();
+
       this.#SVGContainer = generateSVGElement(
         {
-          width: defaults.svgWidth,
-          height: defaults.svgHeight,
+          width: width || defaults.svgWidth,
+          height: height || defaults.svgHeight,
           id: "SVGContainer",
+          style: "border: 1px solid red",
         },
         SVG
       );
       this.#container.appendChild(this.#SVGContainer);
     }
 
-    // calculate the center of the container
     const {
       left,
       top,
       width,
       height,
     } = this.#SVGContainer.getBoundingClientRect();
+
+    // calculate the center of the SVG container
     defaults.center = {
       x: left + width / 2,
       y: top + height / 2,
@@ -119,20 +135,57 @@ export class CircularSlider {
     this.#SVGContainer.appendChild(this.#circle);
     this.#SVGContainer.appendChild(this.#sliderHandle);
 
-    this.#circle.addEventListener("mousemove", this.onMouseMove);
-    this.#sliderHandle.addEventListener("mousemove", this.onMouseMove);
-  }
+    this.#circle.addEventListener(MOUSE_MOVE, this.#onMouseMove);
+    this.#circle.addEventListener(MOUSE_UP, this.#onMouseDown);
 
-  onMouseMove = ({ x, y }) => {
+    this.#sliderHandle.addEventListener(MOUSE_DOWN, this.#onMouseDown);
+    this.#sliderHandle.addEventListener(MOUSE_UP, this.#onMouseDown);
+    this.#sliderHandle.addEventListener(MOUSE_MOVE, this.#onMouseMove);
+  };
+
+  #onMouseDown = ({ type }) => {
+    switch (type) {
+      case MOUSE_DOWN:
+        this.#isMouseDown = true;
+        break;
+
+      default:
+        this.#isMouseDown = false;
+        break;
+    }
+  };
+
+  /**
+   *
+   * @param {MouseEvent} e
+   */
+  #onMouseMove = (e) => {
+    if (!this.#isMouseDown) return;
+    const { x, y, radians } = this.#calculateCoordinates(e.x, e.y);
+    this.#sliderHandle.setAttribute("cx", x.toString());
+    this.#sliderHandle.setAttribute("cy", y.toString());
+
+    this.#handleChange(
+      JSON.stringify({ x, y, r: radians, degrees: radians * (180 / Math.PI) })
+    );
+  };
+
+  /**
+   *
+   * @param {number} x
+   * @param {number} y
+   * @returns {{x: number, y: number, radians: number}}
+   */
+  #calculateCoordinates = (x, y) => {
     // atan2 returns the angle in radians: https://math.stackexchange.com/questions/94379/calculating-angle-in-circle
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/atan2
     let radians = Math.atan2(y - defaults.center.y, x - defaults.center.x);
 
-    // If radians are negative, 2 * PI is added https://stackoverflow.com/a/10343477
-    radians = radians < 0 ? (radians += 2 * Math.PI) : radians;
-    
-    this.#handleChange(
-      JSON.stringify({ x, y, r: radians, degrees: radians * (180 / Math.PI) })
-    );
+    // calculate new coordinates based on angle: https://en.wikipedia.org/wiki/Circle#Equations
+    return {
+      radians,
+      x: defaults.center.x + this.#radius * Math.cos(radians),
+      y: defaults.center.y + this.#radius * Math.sin(radians),
+    };
   };
 }

@@ -1,6 +1,5 @@
 new CircularSlider({
   container: "sliders",
-  color: "blue",
   max: 4,
   min: 0,
   step: 1,

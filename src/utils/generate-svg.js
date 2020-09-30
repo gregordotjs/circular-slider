@@ -1,17 +1,17 @@
-export const SVG = "svg";
-export const CIRCLE = "circle";
-const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
- 
+//@ts-check
+
+import { SVG_NAMESPACE } from "./consts";
+
 /**
  * Create a SVG element based on the attributes and type.
- * @param  {{}} attributes
+ * @param  {{[key: string]: string | number}} attributes
  * @param  {string} type
- * @return {SVGElement} return a SVG element
+ * @return {Element} return a SVG element
  */
-export function generateSVGElement(attributes, type) {
+export default function generateSVGElement(attributes, type) {
   const svgEl = document.createElementNS(SVG_NAMESPACE, type);
   for (const key in attributes) {
-    svgEl.setAttributeNS(null, key, attributes[key]);
+    svgEl.setAttributeNS(null, key, attributes[key].toString());
   }
   return svgEl;
 }
