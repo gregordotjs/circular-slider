@@ -5,7 +5,7 @@ import generateSVGElement from "./utils/generate-svg";
 const defaults = {
   svgHeight: 400,
   svgWidth: 400,
-  strokeWidth: 20,
+  strokeWidth: 30,
   center: {
     x: 0,
     y: 0,
@@ -28,7 +28,7 @@ export class CircularSlider {
 
   #isMouseDown = false;
 
-  /** @type {(value: string) => void} */
+  /** @type {(value: string) => void | null} */
   #handleChange = null;
 
   /**
@@ -44,6 +44,9 @@ export class CircularSlider {
 
   /** @type {Element} */
   #circle = null;
+
+  /** @type {Element} */
+  #progressCircle = null;
 
   /** @type {Element} */
   #sliderHandle = null;
@@ -90,6 +93,8 @@ export class CircularSlider {
         },
         SVG
       );
+
+      // Append SVG container to div (container)
       this.#container.appendChild(this.#SVGContainer);
     }
 
@@ -106,15 +111,20 @@ export class CircularSlider {
       y: top + height / 2,
     };
 
-    this.#circle = generateSVGElement(
+    const circleAttributes = {
+      cx: defaults.center.x,
+      cy: defaults.center.y,
+      r: this.#radius,
+      fill: "none",
+      stroke: "#dadada",
+      ["stroke-width"]: defaults.strokeWidth,
+    };
+
+    this.#circle = generateSVGElement(circleAttributes, CIRCLE);
+    this.#progressCircle = generateSVGElement(
       {
-        cx: defaults.center.x,
-        cy: defaults.center.y,
-        r: this.#radius,
-        fill: "none",
-        stroke: "#dadada",
-        ["stroke-width"]: defaults.strokeWidth,
-        style: "cursor: pointer;",
+        ...circleAttributes,
+        stroke: this.#color,
       },
       CIRCLE
     );
@@ -127,15 +137,17 @@ export class CircularSlider {
         fill: "none",
         stroke: "black",
         ["stroke-width"]: defaults.strokeWidth / 2,
-        style: "cursor: pointer;",
+        style: "cursor: grab;",
       },
       CIRCLE
     );
 
+    // append SVG elements to SVG container
     this.#SVGContainer.appendChild(this.#circle);
+    this.#SVGContainer.appendChild(this.#progressCircle);
     this.#SVGContainer.appendChild(this.#sliderHandle);
 
-    this.#circle.addEventListener(MOUSE_MOVE, this.#onMouseMove);
+    // Setting up events for SVG elements
     this.#circle.addEventListener(MOUSE_UP, this.#onMouseDown);
 
     this.#sliderHandle.addEventListener(MOUSE_DOWN, this.#onMouseDown);
@@ -146,10 +158,14 @@ export class CircularSlider {
   #onMouseDown = ({ type }) => {
     switch (type) {
       case MOUSE_DOWN:
+        // @ts-ignore
+        this.#sliderHandle.style = "cursor: grabbing;";
         this.#isMouseDown = true;
         break;
 
       default:
+        // @ts-ignore
+        this.#sliderHandle.style = "cursor: grab;";
         this.#isMouseDown = false;
         break;
     }
@@ -161,13 +177,29 @@ export class CircularSlider {
    */
   #onMouseMove = (e) => {
     if (!this.#isMouseDown) return;
-    const { x, y, radians } = this.#calculateCoordinates(e.x, e.y);
+    const { pageX, pageY } = e;
+
+    // Calculating new position with e.x and e.y (SVG coordinates) doesn't yield the correct behavior (slider handle is always a bit off).
+
+    // Obtaining screen coordinates from SVG coordinates
+    // @ts-ignore
+    let pt = this.#SVGContainer.createSVGPoint();
+
+    // Set point coordinates (pageX, pageY; relative to the <HTML> element)
+    pt.x = pageX;
+    pt.y = pageY;
+
+    // @ts-ignore
+    pt = pt.matrixTransform(this.#SVGContainer.getScreenCTM().inverse());
+
+    const { x, y, radians } = this.#calculateCoordinates(pt.x, pt.y);
     this.#sliderHandle.setAttribute("cx", x.toString());
     this.#sliderHandle.setAttribute("cy", y.toString());
 
-    this.#handleChange(
-      JSON.stringify({ x, y, r: radians, degrees: radians * (180 / Math.PI) })
-    );
+    this.#handleChange &&
+      this.#handleChange(
+        JSON.stringify({ x, y, r: radians, degrees: radians * (180 / Math.PI) })
+      );
   };
 
   /**
