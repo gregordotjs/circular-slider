@@ -6,7 +6,13 @@
     <title>Circular slider demo</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div class="container">
+      <div id="results">
+        <div id="spinner1Results"></div>
+        <div id="spinner2Results"></div>
+      </div>
+      <div id="sliders"></div>
+    </div>
     <% for(var i=0; i < htmlWebpackPlugin.files.js.length; i++) {%>
     <script
       type="text/javascript"

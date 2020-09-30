@@ -24,8 +24,12 @@ export class CircularSlider {
   /** @type {number} */
   #radius = 0;
 
+  /** @type {(data) => {}} */
+  #handleChange = null;
+
   /**
    * Elements
+   *
    */
 
   /** @type {Element} */
@@ -38,7 +42,10 @@ export class CircularSlider {
   #circle = null;
 
   constructor(options) {
-    const { container, color, max, min, step, radius } = options;
+    const { container, color, max, min, step, radius, onChange } = options;
+    if (onChange) {
+      this.#handleChange = onChange;
+    }
     this.#container = byId(container);
     this.#color = color;
     this.#max = max;
@@ -61,8 +68,8 @@ export class CircularSlider {
         },
         SVG
       );
+      this.#container.appendChild(this.#SVGContainer);
     }
-    this.#container.appendChild(this.#SVGContainer);
 
     this.#circle = generateSVGElement(
       {
@@ -77,5 +84,9 @@ export class CircularSlider {
       CIRCLE
     );
     this.#SVGContainer.appendChild(this.#circle);
+
+    this.#circle.addEventListener("mousemove", ({ x, y }) => {
+      this.#handleChange(JSON.stringify({ x, y }));
+    });
   }
 }
