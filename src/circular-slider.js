@@ -72,7 +72,10 @@ export class CircularSlider {
       radius,
       onChange = null,
     } = options;
-    if ((max - min) % step !== 0) throw new Error(`Can't achieve full circle with given props: min ${min}, max ${max} and step ${step}`);
+    if ((max - min) % step !== 0)
+      throw new Error(
+        `Can't achieve full circle with given props: min ${min}, max ${max} and step ${step}`
+      );
 
     if (onChange !== null) {
       this.#handleChange = onChange;
@@ -137,7 +140,7 @@ export class CircularSlider {
         ...circleAttributes,
         ["stroke-dasharray"]: this.#circumference,
         ["stroke-dashoffset"]: this.#circumference,
-        style: `transform: rotate(-90deg); transform-origin: ${x}px ${y}px`,
+        style: `transform: rotate(-90deg); transform-origin: ${x}px ${y}px; transition: stroke-dashoffset 0.40s;`,
         stroke: this.#color,
       },
       CIRCLE
@@ -147,10 +150,10 @@ export class CircularSlider {
       {
         cx: x,
         cy: y - this.#radius,
-        r: 7,
-        fill: "none",
-        stroke: "black",
-        ["stroke-width"]: defaults.strokeWidth / 2,
+        r: 20,
+        fill: "white",
+        stroke: "#888",
+        ["stroke-width"]: 10,
         style: "cursor: grab;",
       },
       CIRCLE
@@ -204,11 +207,14 @@ export class CircularSlider {
 
     // Calculating new position with e.x and e.y (SVG coordinates) doesn't yield the correct behavior (slider handle is always a bit off).
     // Obtaining screen coordinates from SVG coordinates
+
     // @ts-ignore
     let pt = this.#SVGContainer.createSVGPoint();
+
     // Set point coordinates (pageX, pageY; relative to the <HTML> element)
     pt.x = pageX;
     pt.y = pageY;
+
     // @ts-ignore
     pt = pt.matrixTransform(this.#SVGContainer.getScreenCTM().inverse());
 
@@ -220,9 +226,6 @@ export class CircularSlider {
     this.#sliderHandle.setAttribute("cx", x.toString());
     this.#sliderHandle.setAttribute("cy", y.toString());
     this.#moveProgressCircle(percentage);
-
-    this.#handleChange &&
-      this.#handleChange(JSON.stringify({ x, y, r: radians, degrees }));
   };
 
   /**
@@ -241,6 +244,7 @@ export class CircularSlider {
 
     // calculate the number of steps
     const steps = (this.#max - this.#min) / this.#step;
+    
     // get a single step in degrees
     const stepInDegrees = 360 / steps;
 
@@ -253,6 +257,8 @@ export class CircularSlider {
       let max = startDegrees + stepInDegrees;
       if (degrees >= min && degrees <= max) {
         index++;
+        this.#handleChange &&
+          this.#handleChange((this.#min + this.#step * index).toString());
         break;
       }
       index++;

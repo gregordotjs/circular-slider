@@ -5,18 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Circular slider demo</title>
     <style>
+      .spinner-value {
+        font-size: 160%;
+        font-weight: 900;
+      }
+      #results {
+        float: left;
+        width: 15em;
+      }
+
       #sliders {
-        margin-top: 2em;
+        float: left;
         width: 30em;
         height: 30em;
+      }
+
+      .color-box {
+        border: 1px solid black;
+        width: 1em;
+        height: 1em;
+        display: inline-block;
       }
     </style>
   </head>
   <body>
     <div class="container">
       <div id="results">
-        <div id="spinner1Results">&nbsp;</div>
-        <div id="spinner2Results">&nbsp;</div>
+        &nbsp;
+        <div id="spinner1Results">
+          <div class="color-box"></div>
+          <span class="spinner-value"></span>
+        </div>
+        <div id="spinner2Results">
+          <div class="color-box"></div>
+          <span class="spinner-value"></span>
+        </div>
+        <div id="spinner3Results">
+          <div class="color-box"></div>
+          <span class="spinner-value"></span>
+        </div>
       </div>
       <div id="sliders"></div>
     </div>
