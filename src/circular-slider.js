@@ -72,6 +72,8 @@ export class CircularSlider {
       radius,
       onChange = null,
     } = options;
+    if ((max - min) % step !== 0) throw new Error(`Can't achieve full circle with given props: min ${min}, max ${max} and step ${step}`);
+
     if (onChange !== null) {
       this.#handleChange = onChange;
     }
@@ -81,6 +83,7 @@ export class CircularSlider {
     this.#min = min;
     this.#step = step;
     this.#radius = radius;
+
     this.#OnInit();
   }
 
@@ -209,19 +212,14 @@ export class CircularSlider {
     // @ts-ignore
     pt = pt.matrixTransform(this.#SVGContainer.getScreenCTM().inverse());
 
-    const { x, y, radians } = this.#calculateCoordinates(pt.x, pt.y);
-    let degrees = radians * (180 / Math.PI);
-
-    // convert to North 0 - 360 degrees
-    if (degrees < -90) {
-      degrees += 450;
-    } else {
-      degrees += 90;
-    }
+    const { x, y, radians, degrees, percentage } = this.#calculateCoordinates(
+      pt.x,
+      pt.y
+    );
 
     this.#sliderHandle.setAttribute("cx", x.toString());
     this.#sliderHandle.setAttribute("cy", y.toString());
-    this.#moveProgressCircle(degrees / 360);
+    this.#moveProgressCircle(percentage);
 
     this.#handleChange &&
       this.#handleChange(JSON.stringify({ x, y, r: radians, degrees }));
@@ -231,16 +229,41 @@ export class CircularSlider {
    *
    * @param {number} x
    * @param {number} y
-   * @returns {{x: number, y: number, radians: number}}
+   * @returns {{x: number, y: number, radians: number, degrees: number, percentage: number}}
    */
   #calculateCoordinates = (x, y) => {
     // atan2 returns the angle in radians: https://math.stackexchange.com/questions/94379/calculating-angle-in-circle
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/atan2
     let radians = Math.atan2(y - defaults.center.y, x - defaults.center.x);
+    let degrees = radians * (180 / Math.PI);
+    let tilt = degrees < -90 ? 450 : 90;
+    degrees += tilt;
+
+    // calculate the number of steps
+    const steps = (this.#max - this.#min) / this.#step;
+    // get a single step in degrees
+    const stepInDegrees = 360 / steps;
+
+    let startDegrees = 0;
+    let index = 0;
+
+    // go through all possible steps and identify where the current mouse position is
+    for (let i = 1; i <= steps; i++) {
+      let min = startDegrees;
+      let max = startDegrees + stepInDegrees;
+      if (degrees >= min && degrees <= max) {
+        index++;
+        break;
+      }
+      index++;
+      startDegrees += stepInDegrees;
+    }
 
     // calculate new coordinates based on angle: https://en.wikipedia.org/wiki/Circle#Equations
     return {
       radians,
+      degrees,
+      percentage: index / steps,
       x: defaults.center.x + this.#radius * Math.cos(radians),
       y: defaults.center.y + this.#radius * Math.sin(radians),
     };
@@ -250,6 +273,7 @@ export class CircularSlider {
    * @param {number} percentage
    */
   #moveProgressCircle = (percentage) => {
+    console.log({ percentage });
     let offset = this.#circumference - percentage * this.#circumference;
     this.#progressCircle.setAttribute("stroke-dashoffset", offset.toString());
   };

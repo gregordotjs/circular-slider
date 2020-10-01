@@ -13,9 +13,9 @@ new CircularSlider({
 new CircularSlider({
   container: "sliders",
   color: "green",
-  max: 4,
-  min: 0,
-  step: 1,
+  max: 1000,
+  min: 250,
+  step: 250,
   radius: 60,
   onChange: (data) => {
     document.getElementById("spinner2Results").textContent = data;
