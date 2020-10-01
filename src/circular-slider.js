@@ -1,4 +1,14 @@
 //@ts-check
+
+// TODO:
+  // - mobile
+  // - default values?
+
+import {
+  screenToSVGCoordinates,
+  toDegrees,
+  toRadians,
+} from "./utils/transformations";
 import {
   CIRCLE,
   CLICK,
@@ -174,6 +184,13 @@ export class CircularSlider {
     this.#sliderHandle.addEventListener(MOUSE_UP, this.#onClick);
     this.#circle.addEventListener(CLICK, this.#onClick);
     this.#progressCircle.addEventListener(CLICK, this.#onClick);
+
+    window.document.addEventListener(MOUSE_UP, (_) => {
+      this.#sliderHandle.setAttribute("style", "cursor: grab");
+      this.#isMouseDown = false;
+      const { x, y } = this.#lastMousePosition;
+      if (x !== null && y !== null) this.#slide({ pageX: x, pageY: y });
+    });
   };
 
   /**
@@ -189,6 +206,7 @@ export class CircularSlider {
    * @param {MouseEvent} e
    */
   #onMouseDown = (e) => {
+    e.preventDefault();
     this.#sliderHandle.setAttribute("style", "cursor: grabbing");
     this.#isMouseDown = true;
   };
@@ -207,21 +225,14 @@ export class CircularSlider {
   };
 
   #slide = ({ pageX, pageY }) => {
-    // @ts-ignore
-    let pt = this.#SVGContainer.createSVGPoint();
+    this.#lastMousePosition.x = pageX;
+    this.#lastMousePosition.y = pageY;
 
-    // Set point coordinates (pageX, pageY; relative to the <HTML> element)
-    pt.x = pageX;
-    pt.y = pageY;
-
-    // @ts-ignore
-    pt = pt.matrixTransform(this.#SVGContainer.getScreenCTM().inverse());
-
-    this.#lastMousePosition.x = pt.x;
-    this.#lastMousePosition.y = pt.y;
-
-    const { x, y, percentage } = this.#calculateCoordinates(pt.x, pt.y);
-
+    const pt = screenToSVGCoordinates(this.#SVGContainer, pageX, pageY);
+    const { x, y, percentage, radians, degrees } = this.#calculateCoordinates(
+      pt.x,
+      pt.y
+    );
     this.#sliderHandle.setAttribute("cx", x.toString());
     this.#sliderHandle.setAttribute("cy", y.toString());
     this.#moveProgressCircle(percentage);
@@ -231,13 +242,13 @@ export class CircularSlider {
    *
    * @param {number} x
    * @param {number} y
-   * @returns {{x: number, y: number, percentage: number}}
+   * @returns {{x: number, y: number, percentage: number, radians: number, degrees: number}}
    */
   #calculateCoordinates = (x, y) => {
     // atan2 returns the angle in radians: https://math.stackexchange.com/questions/94379/calculating-angle-in-circle
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/atan2
     let radians = Math.atan2(y - defaults.center.y, x - defaults.center.x);
-    let degrees = radians * (180 / Math.PI);
+    let degrees = toDegrees(radians);
     let tilt = degrees < -90 ? 450 : 90;
     degrees += tilt;
 
@@ -264,7 +275,7 @@ export class CircularSlider {
 
         // this will force the slide handler to "snap" to the nearest step
         if (!this.#isMouseDown) {
-          radians = (min - tilt) * (Math.PI / 180);
+          radians = toRadians(min - tilt);
         }
         this.#onChange(this.#min + this.#step * index);
         break;
@@ -272,7 +283,7 @@ export class CircularSlider {
 
       if (degrees > min && degrees > divider && degrees < max) {
         if (!this.#isMouseDown) {
-          radians = (max - tilt) * (Math.PI / 180);
+          radians = toRadians(max - tilt);
         }
         this.#onChange(this.#min + this.#step * index);
         break;
@@ -283,6 +294,8 @@ export class CircularSlider {
 
     // calculate new coordinates based on angle: https://en.wikipedia.org/wiki/Circle#Equations
     return {
+      radians,
+      degrees,
       percentage: index / steps,
       x: defaults.center.x + this.#radius * Math.cos(radians),
       y: defaults.center.y + this.#radius * Math.sin(radians),
