@@ -39,7 +39,7 @@ new CircularSlider({
 new CircularSlider({
   container: "sliders",
   color: color2,
-  max: 4,
+  max: 20,
   min: 0,
   step: 1,
   radius: 140,
@@ -55,7 +55,7 @@ new CircularSlider({
   max: 1000,
   min: 250,
   step: 250,
-  radius: 60,
+  radius: 80,
   onChange: (data) => {
     displayValue("#spinner3Results > span", data, "minutes");
   },

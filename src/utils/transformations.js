@@ -2,7 +2,13 @@
 export const toRadians = (degrees) => degrees * (Math.PI / 180);
 export const toDegrees = (radians) => radians * (180 / Math.PI);
 
-export const screenToSVGCoordinates = (svgEl, pageX, pageY) => {
+/**
+ * @param {Element} svgEl
+ * @param {number} pageX
+ * @param {number} pageY
+ * @returns {{x: number, y: number}}
+ */
+export function screenToSVGCoordinates(svgEl, pageX, pageY) {
   // @ts-ignore
   let pt = svgEl.createSVGPoint();
 
@@ -16,4 +22,4 @@ export const screenToSVGCoordinates = (svgEl, pageX, pageY) => {
     x: pt.x,
     y: pt.y,
   };
-};
+}

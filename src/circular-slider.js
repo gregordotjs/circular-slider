@@ -1,8 +1,8 @@
 //@ts-check
 
 // TODO:
-  // - mobile
-  // - default values?
+// - mobile
+// - default values?
 
 import {
   screenToSVGCoordinates,
@@ -15,26 +15,30 @@ import {
   MOUSE_DOWN,
   MOUSE_MOVE,
   MOUSE_UP,
+  TOUCH_END,
+  TOUCH_MOVE,
+  TOUCH_START,
   SVG,
 } from "./utils/consts";
 import generateSVGElement from "./utils/generate-svg";
+import {
+  ValidateAndGetContainer,
+  ValidateBoundary,
+  ValidateExistingElements,
+  ValidateProperties,
+} from "./utils/validators";
 
 const defaults = {
-  svgHeight: 400,
-  svgWidth: 400,
   strokeWidth: 40,
+  handle: {
+    strokeWidth: 10,
+    radius: 20,
+  },
   center: {
     x: 0,
     y: 0,
   },
 };
-
-/**
- *
- * @param {string} id
- * @returns Element
- */
-const byId = (id) => document.getElementById(id);
 
 export class CircularSlider {
   #color = "";
@@ -86,15 +90,16 @@ export class CircularSlider {
       radius,
       onChange = null,
     } = options;
-    if ((max - min) % step !== 0)
-      throw new Error(
-        `Can't achieve full circle with given props: min ${min}, max ${max} and step ${step}`
-      );
+
+    // Basic validations. TODO: validate more.
+    ValidateProperties(min, max, step);
+    this.#container = ValidateAndGetContainer(container);
+    ValidateExistingElements(radius);
 
     if (onChange !== null) {
       this.#handleChange = onChange;
     }
-    this.#container = byId(container);
+
     this.#color = color;
     this.#max = max;
     this.#min = min;
@@ -105,17 +110,15 @@ export class CircularSlider {
   }
 
   #OnInit = () => {
-    this.#SVGContainer = byId("SVGContainer");
+    this.#SVGContainer = document.getElementById("SVGContainer");
 
     // generate main SVG tag if it doesn't exist yet
     if (this.#SVGContainer === null) {
       // this is called only the first time, when SVG container doesn't exits yet
-      const { width, height } = this.#container.getBoundingClientRect();
-
       this.#SVGContainer = generateSVGElement(
         {
-          width: width || defaults.svgWidth,
-          height: height || defaults.svgHeight,
+          width: "100%",
+          height: "100%",
           id: "SVGContainer",
           style: "border: 1px solid red",
         },
@@ -124,15 +127,25 @@ export class CircularSlider {
 
       // Append SVG container to div (container)
       this.#container.appendChild(this.#SVGContainer);
+
+      // calculate the center of the SVG container
+      const { width, height } = this.#container.getBoundingClientRect();
+      defaults.center = {
+        x: width / 2,
+        y: height / 2,
+      };
     }
 
     const { width, height } = this.#SVGContainer.getBoundingClientRect();
+    const { strokeWidth, radius } = defaults.handle;
 
-    // calculate the center of the SVG container
-    defaults.center = {
-      x: width / 2,
-      y: height / 2,
-    };
+    ValidateBoundary(
+      width,
+      height,
+      this.#radius + strokeWidth + radius,
+      this.#radius
+    );
+
     const { x, y } = defaults.center;
     const circleAttributes = {
       cx: x,
@@ -144,7 +157,10 @@ export class CircularSlider {
       style: "cursor: pointer;",
     };
 
-    this.#circle = generateSVGElement(circleAttributes, CIRCLE);
+    this.#circle = generateSVGElement(
+      { ...circleAttributes, class: "circle" },
+      CIRCLE
+    );
 
     // stroke-dasharray: dash-length, gap-length
     // "hides" the progress circle
@@ -164,10 +180,10 @@ export class CircularSlider {
       {
         cx: x,
         cy: y - this.#radius,
-        r: 20,
+        r: defaults.handle.radius,
         fill: "white",
         stroke: "#888",
-        ["stroke-width"]: 10,
+        ["stroke-width"]: defaults.handle.strokeWidth,
         style: "cursor: grab;",
       },
       CIRCLE
@@ -178,35 +194,44 @@ export class CircularSlider {
     this.#SVGContainer.appendChild(this.#progressCircle);
     this.#SVGContainer.appendChild(this.#sliderHandle);
 
-    // Setting up events for SVG elements
-    this.#sliderHandle.addEventListener(MOUSE_DOWN, this.#onMouseDown);
-    this.#sliderHandle.addEventListener(MOUSE_MOVE, this.#onMouseMove);
-    this.#sliderHandle.addEventListener(MOUSE_UP, this.#onClick);
-    this.#circle.addEventListener(CLICK, this.#onClick);
-    this.#progressCircle.addEventListener(CLICK, this.#onClick);
+    /**
+     * Setting up events for SVG elements
+     */
 
-    window.document.addEventListener(MOUSE_UP, (_) => {
-      this.#sliderHandle.setAttribute("style", "cursor: grab");
-      this.#isMouseDown = false;
-      const { x, y } = this.#lastMousePosition;
-      if (x !== null && y !== null) this.#slide({ pageX: x, pageY: y });
-    });
+    // mouse events
+    this.#sliderHandle.addEventListener(MOUSE_DOWN, this.#startSlide);
+    this.#sliderHandle.addEventListener(MOUSE_MOVE, this.#slide);
+    this.#sliderHandle.addEventListener(MOUSE_UP, this.#endSlide);
+
+    // touch events
+    this.#sliderHandle.addEventListener(TOUCH_START, this.#startSlide);
+    this.#sliderHandle.addEventListener(TOUCH_MOVE, this.#slide);
+    this.#sliderHandle.addEventListener(TOUCH_END, this.#endSlide);
+
+    // click events
+    this.#circle.addEventListener(CLICK, this.#click);
+    this.#progressCircle.addEventListener(CLICK, this.#click);
+
+    this.#emit(this.#min);
+
+    // fixed issues with touchmove
+    this.#container.addEventListener(TOUCH_MOVE, this.#slide);
+    this.#container.addEventListener(MOUSE_MOVE, this.#slide);
+
+    // fixed issues if mouseup performed outside the circle
+    window.document.addEventListener(MOUSE_UP, this.#dropOutside);
+    window.document.addEventListener(TOUCH_END, this.#dropOutside);
   };
+
+  // HANDLERS OF MOUSE EVENTS
 
   /**
    * @param {MouseEvent} e
    */
-  #onClick = (e) => {
-    this.#sliderHandle.setAttribute("style", "cursor: grab");
-    this.#isMouseDown = false;
-    this.#slide(e);
-  };
-
-  /**
-   * @param {MouseEvent} e
-   */
-  #onMouseDown = (e) => {
-    e.preventDefault();
+  #startSlide = (e) => {
+    if (e.type !== TOUCH_START) {
+      e.preventDefault();
+    }
     this.#sliderHandle.setAttribute("style", "cursor: grabbing");
     this.#isMouseDown = true;
   };
@@ -214,17 +239,46 @@ export class CircularSlider {
   /**
    * @param {MouseEvent} e
    */
-  #onMouseUp = (e) => {};
+  #endSlide = (e) => {
+    this.#sliderHandle.setAttribute("style", "cursor: grab");
+    this.#isMouseDown = false;
+  };
 
   /**
    * @param {MouseEvent} e
    */
-  #onMouseMove = (e) => {
-    if (!this.#isMouseDown) return;
-    this.#slide(e);
+  #click = (e) => {
+    this.#sliderHandle.setAttribute("style", "cursor: grab");
+    this.#isMouseDown = false;
+    this.#handleSlide(e);
   };
 
-  #slide = ({ pageX, pageY }) => {
+  #dropOutside = () => {
+    this.#sliderHandle.setAttribute("style", "cursor: grab");
+    this.#isMouseDown = false;
+    const { x, y } = this.#lastMousePosition;
+    if (x !== null && y !== null) this.#handleSlide({ pageX: x, pageY: y });
+  };
+
+  /**
+   * @param {MouseEvent} e
+   */
+  #slide = (e) => {
+    if (!this.#isMouseDown) return;
+    this.#handleSlide(e);
+  };
+
+  // METHODS
+
+  /**
+   * @param {{ pageX: number; pageY: number; type?: string; changedTouches?: any; }} e
+   */
+  #handleSlide = ({ pageX, pageY, type, changedTouches }) => {
+    if (type === TOUCH_MOVE || type === TOUCH_END) {
+      pageX = changedTouches[0].pageX;
+      pageY = changedTouches[0].pageY;
+    }
+
     this.#lastMousePosition.x = pageX;
     this.#lastMousePosition.y = pageY;
 
@@ -277,7 +331,7 @@ export class CircularSlider {
         if (!this.#isMouseDown) {
           radians = toRadians(min - tilt);
         }
-        this.#onChange(this.#min + this.#step * index);
+        this.#emit(this.#min + this.#step * index);
         break;
       }
 
@@ -285,7 +339,7 @@ export class CircularSlider {
         if (!this.#isMouseDown) {
           radians = toRadians(max - tilt);
         }
-        this.#onChange(this.#min + this.#step * index);
+        this.#emit(this.#min + this.#step * index);
         break;
       }
       index++;
@@ -313,7 +367,7 @@ export class CircularSlider {
   /**
    * @param {number} value
    */
-  #onChange = (value) => {
+  #emit = (value) => {
     if (this.#handleChange !== null) {
       this.#handleChange(value);
     }

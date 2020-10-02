@@ -3,10 +3,10 @@
 import { SVG_NAMESPACE } from "./consts";
 
 /**
- * Create a SVG element based on the attributes and type.
+ * Create an SVG element based on the attributes and type.
  * @param  {{[key: string]: string | number}} attributes
  * @param  {string} type
- * @return {Element} return a SVG element
+ * @return {Element} return an SVG element
  */
 export default function generateSVGElement(attributes, type) {
   const svgEl = document.createElementNS(SVG_NAMESPACE, type);

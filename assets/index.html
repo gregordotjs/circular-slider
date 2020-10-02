@@ -2,9 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <title>Circular slider demo</title>
     <style>
+      body {
+        overscroll-behavior-y: contain;
+      }
       .spinner-value {
         font-size: 160%;
         font-weight: 900;
@@ -16,8 +22,8 @@
 
       #sliders {
         float: left;
-        width: 30em;
-        height: 30em;
+        width: 460px;
+        height: 460px;
       }
 
       .color-box {
