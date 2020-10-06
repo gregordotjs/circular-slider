@@ -120,7 +120,6 @@ export class CircularSlider {
           width: "100%",
           height: "100%",
           id: "SVGContainer",
-          style: "border: 1px solid red",
         },
         SVG
       );
@@ -200,20 +199,19 @@ export class CircularSlider {
 
     // mouse events
     this.#sliderHandle.addEventListener(MOUSE_DOWN, this.#startSlide);
-    this.#sliderHandle.addEventListener(MOUSE_MOVE, this.#slide);
+    //this.#sliderHandle.addEventListener(MOUSE_MOVE, this.#slide);
     this.#sliderHandle.addEventListener(MOUSE_UP, this.#endSlide);
 
     // touch events
     this.#sliderHandle.addEventListener(TOUCH_START, this.#startSlide);
-    this.#sliderHandle.addEventListener(TOUCH_MOVE, this.#slide);
+    //this.#sliderHandle.addEventListener(TOUCH_MOVE, this.#slide);
     this.#sliderHandle.addEventListener(TOUCH_END, this.#endSlide);
 
     // click events
+    this.#circle.addEventListener(TOUCH_MOVE, this.#slide);
     this.#circle.addEventListener(CLICK, this.#click);
     this.#progressCircle.addEventListener(CLICK, this.#click);
-
-    this.#emit(this.#min);
-
+   
     // fixed issues with touchmove
     this.#container.addEventListener(TOUCH_MOVE, this.#slide);
     this.#container.addEventListener(MOUSE_MOVE, this.#slide);
@@ -221,6 +219,8 @@ export class CircularSlider {
     // fixed issues if mouseup performed outside the circle
     window.document.addEventListener(MOUSE_UP, this.#dropOutside);
     window.document.addEventListener(TOUCH_END, this.#dropOutside);
+
+    this.#emit(this.#min);
   };
 
   // HANDLERS OF MOUSE EVENTS
@@ -248,6 +248,7 @@ export class CircularSlider {
    * @param {MouseEvent} e
    */
   #click = (e) => {
+    console.log(e.type);
     this.#sliderHandle.setAttribute("style", "cursor: grab");
     this.#isMouseDown = false;
     this.#handleSlide(e);
@@ -257,7 +258,11 @@ export class CircularSlider {
     this.#sliderHandle.setAttribute("style", "cursor: grab");
     this.#isMouseDown = false;
     const { x, y } = this.#lastMousePosition;
-    if (x !== null && y !== null) this.#handleSlide({ pageX: x, pageY: y });
+    if (x !== null && y !== null) {
+      this.#handleSlide({ pageX: x, pageY: y });
+      this.#lastMousePosition.x = null;
+      this.#lastMousePosition.y = null;
+    }
   };
 
   /**

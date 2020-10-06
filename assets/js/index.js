@@ -14,9 +14,9 @@ const query = (cssSelector) => document.querySelector(cssSelector);
 const displayValue = (cssSelector, value, units) =>
   (query(cssSelector).innerHTML = `${value} ${units}`);
 
-const color1 = "blue";
-const color2 = "green";
-const color3 = "black";
+const color1 = "#2bbd7e";
+const color2 = "#9fffe0";
+const color3 = "#69f0ae";
 
 query("#spinner1Results > div").style.backgroundColor = color1;
 query("#spinner2Results > div").style.backgroundColor = color2;
