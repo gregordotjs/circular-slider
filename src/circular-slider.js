@@ -208,7 +208,6 @@ export class CircularSlider {
     this.#sliderHandle.addEventListener(TOUCH_END, this.#endSlide);
 
     // click events
-    this.#circle.addEventListener(TOUCH_MOVE, this.#slide);
     this.#circle.addEventListener(CLICK, this.#click);
     this.#progressCircle.addEventListener(CLICK, this.#click);
    
@@ -248,7 +247,6 @@ export class CircularSlider {
    * @param {MouseEvent} e
    */
   #click = (e) => {
-    console.log(e.type);
     this.#sliderHandle.setAttribute("style", "cursor: grab");
     this.#isMouseDown = false;
     this.#handleSlide(e);
@@ -270,6 +268,7 @@ export class CircularSlider {
    */
   #slide = (e) => {
     if (!this.#isMouseDown) return;
+    e.preventDefault();
     this.#handleSlide(e);
   };
 

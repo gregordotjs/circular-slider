@@ -8,7 +8,7 @@
 export function ValidateProperties(min, max, step) {
   if (step > max)
     throw new Error(`Step ${step} can't be greater than max ${max}`);
-  if (min > max) throw new Error(`Min ${min} can't be greater than max ${max}`);
+  if (min >= max) throw new Error(`Min ${min} can't be greater or equal than max ${max}`);
   if ((max - min) % step !== 0)
     throw new Error(
       `Can't achieve full circle with given props: min ${min}, max ${max} and step ${step}`

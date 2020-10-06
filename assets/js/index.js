@@ -26,9 +26,9 @@ query("#spinner3Results > div").style.backgroundColor = color3;
 new CircularSlider({
   container: "sliders",
   color: color1,
-  max: 270,
+  max: 100,
   min: 0,
-  step: 54,
+  step: 10,
   radius: 200,
   onChange: (data) => {
     displayValue("#spinner1Results > span", data, "steps");
