@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=0.6,minimum-scale=0,maximum-scale=1"/><title>Circular slider demo</title><style>@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap");
+
+      * {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        -moz-tap-highlight-color: rgba(0, 0, 0, 0);
+      }
+      body {
+        font-family: "Roboto", sans-serif;
+        margin: 0;
+        padding: 0;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+        touch-action: manipulation;
+      }
+      .spinner-value {
+        font-size: 160%;
+        font-weight: 900;
+      }
+
+      .results {
+        float: left;
+        width: 12em;
+      }
+
+      #sliders {
+        float: left;
+        width: 30em;
+        height: 30em;
+        -webkit-overflow-scrolling: touch;
+        touch-action: manipulation;
+      }
+
+      .header {
+        background-color: #3700b3;
+        height: 0.5em;
+      }
+
+      .sub-header {
+        background-color: #6200ee;
+        height: 3em;
+        margin-bottom: 1em;
+      }
+      .sub-header h1 {
+        color: white;
+        padding: 0.45em 0 0 0.5em;
+        margin: 0;
+        font-size: 140%;
+      }
+
+      .content {
+        margin: 0 auto;
+        padding: 0.5em;
+      }
+
+      svg {
+        border: 1px solid gray;
+      }
+
+      .color-box {
+        border: 1px solid black;
+        width: 1em;
+        height: 1em;
+        display: inline-block;
+      }</style></head><body><div class="container"><div class="header"></div><div class="sub-header"><h1>Circular slider example</h1></div><div class="content"><div class="results">&nbsp;<div id="spinner1Results"><div class="color-box"></div><span class="spinner-value"></span></div><div id="spinner2Results"><div class="color-box"></div><span class="spinner-value"></span></div><div id="spinner3Results"><div class="color-box"></div><span class="spinner-value"></span></div></div><div id="sliders"></div></div></div><script src="CircularSlider.bundle.js"></script><script src="index.js"></script></body></html>
