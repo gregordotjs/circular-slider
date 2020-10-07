@@ -1,9 +1,5 @@
 //@ts-check
 
-// TODO:
-// - mobile
-// - default values?
-
 import {
   screenToSVGCoordinates,
   toDegrees,
@@ -91,7 +87,6 @@ export class CircularSlider {
       onChange = null,
     } = options;
 
-    // Basic validations. TODO: validate more.
     ValidateProperties(min, max, step);
     this.#container = ValidateAndGetContainer(container);
     ValidateExistingElements(radius);
